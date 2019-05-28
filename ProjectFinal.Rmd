@@ -15,11 +15,13 @@ library(dplyr)
 
 #Nominations announced on January 22, 2019 
 #Awards ceremony was February 24, 2019
-dates <- seq(as.Date("2018/1/1"), as.Date("2019/03/30"), "days")
+dates <- seq(as.Date("2016/1/1"), as.Date("2017/04/10"), "days")
 df <- boxoffice(dates = dates)
 
-df <- df %>% 
-  group_by(movie)
+#Day of Oscar announcment Feb 4 2017
+# Day of Oscar ceremony Feb 26 2017
+awardDates <- seq(as.Date("2017/2/21"), as.Date("2017/04/07"), "days")
+awardSeason <- boxoffice(dates = awardDates)
   
 
 
