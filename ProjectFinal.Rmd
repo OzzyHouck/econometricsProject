@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(boxoffice)
 library(tidyverse)
+library(lubridate)
 ```
 
 ```{r}
@@ -23,3 +24,65 @@ bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", wi
 bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "A Star Is Born")
 bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Roma")
 ```
+#instead of looking at percent change we could look at absolute gross. In which case we would also need budget. 
+
+#Nominations announced on January 22, 2019 
+#Awards ceremony was February 24, 2019
+
+#Day of Oscar announcment Feb 4 2017
+# Day of Oscar ceremony Feb 26 2017
+```{r}
+ceremonyDates <- c("2019/2/24", "2018/3/04", "2017/2/26",  "2016/2/28","2015/2/22", "2014/3/02", "2013/2/24", "2012/2/26", "2011/2/27", "2010/3/07")
+
+awardDates <- c()
+
+for (i in ceremonyDates)
+{
+  dates <- format(seq(from = as.Date(i) - 14, to = as.Date(i) + 14, by = "day"),
+                  format="%Y/%m/%d")
+  awardDates <- c(awardDates, dates)
+}
+awardDates <- as.Date(awardDates)
+
+awardSeason <- boxoffice(dates = awardDates)
+
+winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King's Speech", "The Hurt Locker")
+
+df <- awardSeason %>% 
+  mutate(cermony = ifelse(date %in% as.Date(ceremonyDates), 1, 0)) %>% 
+  group_by(year(date)) %>% 
+  mutate(timerPeriod = ifelse(date < (.$cermony==1), "before", "after")) #This part is what is left to fix. I am trying to figure out how to make it check if a given date is less than the date marked with a one in the ceronony column. The previous line breaks it up into indivdual years so there will only be one marked entry in each group.
+
+  mutate(before = ifelse(date <= as.Date("2019/2/24"), 1, 0)) %>% #Create dummy to divide up into two time periods
+  mutate(winner = ifelse(movie %in% winners, 1, 0)) %>% #dummer to denote a winner
+  mutate(movie2 = ifelse(before ==1,sub("^", "Before: ", movie) , movie)) %>%  #Add new column which divides the movie names into before and after.
+ # filter(percent_change4 <= 500) %>% 
+  drop_na()
+  
+
+df <- df %>% 
+  left_join(df %>% #weird thing in which I calculate the percentage change for each movie in each timer period and then join those values to the big table
+              group_by(movie2) %>% 
+              summarise(meanChange = mean(percent_change)), by = "movie2") %>% 
+  group_by(movie2) %>% 
+  slice(n()) # takes entry for each movie in each time period
+
+df <- df %>% 
+  left_join(df %>% 
+              group_by(movie) %>%
+              summarise(diffMeanChange = meanChange[2] - meanChange[1]), by = "movie") %>% 
+  drop_na()
+
+```
+Dates of Oscar ceromonies
+
+	February 24, 2019: Green Book
+	March 4, 2018: The Shape of Water
+	February 26, 2017: Moonlight
+	February 28, 2016: Spotlight
+	February 22, 2015: Birdman
+	March 2, 2014: 12 Years a Slave
+	February 24, 2013: Argo
+	February 26, 2012: The Artist
+	February 27, 2011: The King's Speech
+	March 7, 2010: The Hurt Locker
