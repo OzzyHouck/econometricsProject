@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(boxoffice)
 library(tidyverse)
+library(lubridate)
 ```
 
 
@@ -97,7 +98,6 @@ for (i in ceremonyDates)
 {
   dates <- format(seq(from = as.Date(i) - 14, to = as.Date(i) + 14, by = "day"),
                   format="%Y/%m/%d")
-
   awardDates <- c(awardDates, dates)
 }
 awardDates <- as.Date(awardDates)
@@ -107,11 +107,16 @@ awardSeason <- boxoffice(dates = awardDates)
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King's Speech", "The Hurt Locker")
 
 df <- awardSeason %>% 
+  mutate(cermony = ifelse(date %in% as.Date(ceremonyDates), 1, 0)) %>% 
+  group_by(year(date)) %>% 
+  mutate(timerPeriod = ifelse(date < (.$cermony==1), "before", "after")) #This part is what is left to fix. I am trying to figure out how to make it check if a given date is less than the date marked with a one in the ceronony column. The previous line breaks it up into indivdual years so there will only be one marked entry in each group.
+
   mutate(before = ifelse(date <= as.Date("2019/2/24"), 1, 0)) %>% #Create dummy to divide up into two time periods
   mutate(winner = ifelse(movie %in% winners, 1, 0)) %>% #dummer to denote a winner
   mutate(movie2 = ifelse(before ==1,sub("^", "Before: ", movie) , movie)) %>%  #Add new column which divides the movie names into before and after.
  # filter(percent_change4 <= 500) %>% 
   drop_na()
+  
 
 df <- df %>% 
   left_join(df %>% #weird thing in which I calculate the percentage change for each movie in each timer period and then join those values to the big table
