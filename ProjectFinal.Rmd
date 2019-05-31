@@ -88,8 +88,20 @@ library(tidyverse)
 
 #Day of Oscar announcment Feb 4 2017
 # Day of Oscar ceremony Feb 26 2017
-ceremonyDates <- c(as.Date("2019/2/24"), as.Date("2018/3/04"), as.Date("2017/2/26"),  as.Date("2016/2/28"), as.Date("2015/2/22"), as.Date("2014/3/02"), as.Date("2013/2/24"), as.Date("2012/2/26"), as.Date("2011/2/27"), as.Date("2010/3/07")) 
-awardDates <- seq(as.Date("2019/2/1"), as.Date("2019/04/14"), "days")
+
+ceremonyDates <- c("2019/2/24", "2018/3/04", "2017/2/26",  "2016/2/28","2015/2/22", "2014/3/02", "2013/2/24", "2012/2/26", "2011/2/27", "2010/3/07")
+
+awardDates <- c()
+
+for (i in ceremonyDates)
+{
+  dates <- format(seq(from = as.Date(i) - 14, to = as.Date(i) + 14, by = "day"),
+                  format="%Y/%m/%d")
+
+  awardDates <- c(awardDates, dates)
+}
+awardDates <- as.Date(awardDates)
+
 awardSeason <- boxoffice(dates = awardDates)
 
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King's Speech", "The Hurt Locker")
