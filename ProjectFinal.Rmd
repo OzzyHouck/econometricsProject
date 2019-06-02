@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(boxoffice)
 library(tidyverse)
 library(lubridate)
+library(textclean)
 
 ```
 
@@ -24,7 +25,6 @@ bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", wi
 bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Vice")
 bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "A Star is Born")
 bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Roma")
-
 ```
 
 #instead of looking at percent change we could look at absolute gross. In which case we would also need budget. 
@@ -61,13 +61,13 @@ for (i in ceremonyDates)
 awardDates <- as.Date(awardDates)
 
 awardSeason <- boxoffice(dates = awardDates)
-awardSeasonNominees <- awardSeason %>%
-      filter(awardSeason$movie %in% bestPicture$entity)
+awardSeasonNominees <- awardSeason %>% 
+      filter(replace_non_ascii(awardSeason$movie, replacement = "", remove.nonconverted = TRUE) %in% replace_non_ascii(bestPicture$entity, replacement = "", remove.nonconverted = TRUE)) 
 
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King's Speech", "The Hurt Locker")
 nomineesList <- bestPicture$entity
 
-df <- awardSeason %>% 
+df <- awardSeasonNominees %>% 
   filter(movie != "Black Panther") %>%  #in theaters during previous award season
   mutate(cermony = ifelse(date %in% as.Date(ceremonyDates), 1, 0)) %>% 
   mutate(winner = ifelse(movie %in% winners, 1, 0)) %>% #dummy to denote a winner
@@ -110,7 +110,7 @@ Dates of Oscar ceromonies
 Creating Summary Statistics and visualizations
 
 ```{r}
-ggplot(df, aes(x = date, y = diffMeanChange)) +
+ggplot(df, aes(x = date, y = diffMeanChange, color = winner)) +
   geom_point()
 ```
 
