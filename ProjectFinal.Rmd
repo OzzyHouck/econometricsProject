@@ -68,7 +68,6 @@ winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Bird
 
 df <- awardSeasonNominees %>% 
   filter(movie != "Black Panther") %>%  #in theaters during previous award season
-  mutate(cermony = ifelse(date %in% as.Date(ceremonyDates), 1, 0)) %>% 
   mutate(winner = ifelse(movie %in% winners, 1, 0)) %>% #dummy to denote a winner
   group_by(date) %>% 
   mutate(movie2 = ifelse(date <= findCeremonyDate(date), sub("^", "Before: ", movie) , movie)) %>%  #Add new column which divides the movie names into before and after.
@@ -109,8 +108,8 @@ Dates of Oscar ceromonies
 Creating Summary Statistics and visualizations
 
 ```{r}
-ggplot(df, aes(x = date, y = diffMeanChange, color = winner)) +
-  geom_point()
+ggplot(df, aes(x = date, y = diffMeanChange, color = as.factor(winner))) +
+  geom_point() 
 ```
 
 
