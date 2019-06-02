@@ -60,13 +60,9 @@ for (i in ceremonyDates)
 }
 awardDates <- as.Date(awardDates)
 
-<<<<<<< HEAD
-awardSeason <- boxoffice(dates = awardDates) #data pull
-=======
 awardSeason <- boxoffice(dates = awardDates)
 awardSeasonNominees <- awardSeason %>%
       filter(awardSeason$movie %in% bestPicture$entity)
->>>>>>> 2ab93949d2e66dc55da8fc88b133221d61712ef3
 
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King's Speech", "The Hurt Locker")
 nomineesList <- bestPicture$entity
