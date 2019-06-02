@@ -63,6 +63,7 @@ awardDates <- as.Date(awardDates)
 awardSeason <- boxoffice(dates = awardDates)
 awardSeasonNominees <- awardSeason %>% 
       filter(replace_non_ascii(awardSeason$movie, replacement = "", remove.nonconverted = TRUE) %in% replace_non_ascii(bestPicture$entity, replacement = "", remove.nonconverted = TRUE)) 
+#filters our awards season data by nominees 
 
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King's Speech", "The Hurt Locker")
 nomineesList <- bestPicture$entity
