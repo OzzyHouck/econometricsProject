@@ -65,9 +65,8 @@ awardSeasonNominees <- awardSeason %>%
       filter(awardSeason$movie %in% bestPicture$entity)
 
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King's Speech", "The Hurt Locker")
-nomineesList <- bestPicture$entity
 
-df <- awardSeason %>% 
+df <- awardSeasonNominees %>% 
   filter(movie != "Black Panther") %>%  #in theaters during previous award season
   mutate(cermony = ifelse(date %in% as.Date(ceremonyDates), 1, 0)) %>% 
   mutate(winner = ifelse(movie %in% winners, 1, 0)) %>% #dummy to denote a winner
@@ -110,7 +109,15 @@ Dates of Oscar ceromonies
 Creating Summary Statistics and visualizations
 
 ```{r}
-ggplot(df, aes(x = date, y = diffMeanChange)) +
+ggplot(df, aes(x = date, y = diffMeanChange, color = winner)) +
   geom_point()
 ```
+
+
+Let's be stupid and prematurly run a regression!
+```{r}
+model <- lm(diffMeanChange ~ days + winner, data = df)
+summary(model)
+```
+
 
