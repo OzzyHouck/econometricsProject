@@ -141,7 +141,12 @@ dfWinner <- df %>%
   filter(winner == 1)
 dfLoser <- df %>% 
   filter(winner == 0)
-model <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + winner, data = df)
+modelWinner <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + after, data = dfWinner)
+modelLoser <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + after, data = dfLoser)
+
+
+model <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + after:winner + after, data = df)
+summary(model)
 residuals <- model$residuals
 ```
 
@@ -150,7 +155,7 @@ residuals <- model$residuals
 ggplot(df, aes(x = days, y = residuals, color = as.factor(winner))) +
   geom_point()
 
-stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days in Theater", "Best Picture Winner", "Oscar Viewership"), dep.var.labels = c("Difference in Mean % BOR Change"), header = FALSE, type = "latex")
+stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days in Theater", "Best Picture Winner", "Oscar Viewership"), dep.var.labels = c("Difference in Mean % BOR Change"), header = FALSE, type = "text")
 ```
 
 $$\hat{\theta} = \frac{\frac{0.2033 - .198}{1}}{\frac{1 - .2033}{57 - 4}} \sim F(1, 53)$$
