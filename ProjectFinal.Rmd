@@ -56,8 +56,6 @@ winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Bird
 nominees <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King’s Speech", "Roma", "The Favourite", "Black Panther", "A Star is Born", "BlacKkKlansman", "Bohemian Rhapsody", "Vice", "Three Billboards Outside Eb…", "Dunkirk", "Lady Bird", "Get Out", "The Post", "Darkest Hour", "Call Me by Your Name", "Phantom Thread", "La La Land", "Manchester-by-the Sea", "Hidden Figures", "Fences", "Arrival", "Hacksaw Ridge", "Hell or High Water", "Lion", "The Revenant", "The Big Short", "The Martian", "Mad Max: Fury Road", "Room", "Bridge of Spies", "Brooklyn", "American Sniper", "Boyhood", "The Grand Budapest Hotel", "The Imitation Game", "Selma", "The Theory of Everything", "Whiplash", "Gravity", "American Hustle", "Dallas Buyers Club", "Her", "Philomena", "The Wolf of Wall Street", "Captain Phillips", "Nebraska", "Lincoln", "Zero Dark Thirty", "Les Miserables", "Life of Pi", "Silver Linings Playbook", "Django Unchained", "Armour", "Beasts of the Southern Wild", "The Help", "The Descendants", "Hugo", "Midnight in Paris", "Moneyball", "The Tree of Life", "War Hoarse", "Extremely Loud and Incredib…", "127 Hours", "Black Swan", "The Fighter", "Inception", "The Kids Are All Right", "The Social Network", "Toy Story 3", "True Grit", "Winter's Bone")
 
 allNominees <- read.csv("allNominees.csv", header = T)
-otherAwards <- allNominees %>% 
-  filter(allNominees$Film %in% nominees & !allNominees$Film %in% winners) 
 
 df <- awardSeason %>%
   mutate(viewership = cut(year(date), breaks = c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), labels = c(37.6, 39.3, 40.3, 43.7, 36.6, 34.3, 32.9, 26.5, 29.6))) %>% 
@@ -131,12 +129,6 @@ stargazer(table, title = "Summary Statistics", header = FALSE, type = "text") # 
 
 ```{r}
 
-<<<<<<< HEAD
-model <- lm(diffMeanChange ~ days + winner + as.numeric(viewership) + otherAwards$Awards, data = df)
-modelRestricted <- lm(diffMeanChange ~ days + winner, data = df)
-modelRestricted2 <- lm(diffMeanChange ~  winner + as.numeric(viewership), data = df)
-summary(model)
-=======
 model <- lm(diffMeanChange ~ days + winner + as.numeric(viewership), data = df)
 
 residuals <- model$residuals
@@ -145,7 +137,6 @@ residuals <- model$residuals
 ggplot(df, aes(x = days, y = residuals, color = as.factor(winner))) +
   geom_point()
 
->>>>>>> 13311a8c225b8f1107c2e0f9db342a442f8463e2
 
 stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days in Theater", "Best Picture Winner", "Oscar Viewership"), dep.var.labels = c("Difference in Mean % BOR Change"), header = FALSE, type = "latex")
 ```
@@ -165,13 +156,9 @@ summary(orcuttreg1) #For sure no AC now!
 
 ```{r, results = 'asis', echo = F}
 stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c("Difference in Percent Change in Revenue"), covariate.labels = c("Best Picture Winner", "Days in Theatres", "Veiwership (millions)"), header = FALSE)
-```
 
-
-
-=======
 covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
 coeftest(model, covarianceMatrix)
 ```
 $$PRF: \bar{\Delta}\%BOR^{before} - \bar{\Delta}\%BOR^{after} = Winner + Days$$
->>>>>>> ff320c61d6abef95009b66c8473f1153c29d9fd4
+
