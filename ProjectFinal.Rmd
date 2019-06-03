@@ -11,15 +11,11 @@ library(boxoffice)
 library(tidyverse)
 library(lubridate)
 library(textclean)
-<<<<<<< HEAD
 library(stargazer)
 library(lmtest)
 library(orcutt)
 library(tseries)
-=======
 library(sandwich)
-library(lmtest)
->>>>>>> ff320c61d6abef95009b66c8473f1153c29d9fd4
 ```
 
 #instead of looking at percent change we could look at absolute gross. In which case we would also need budget. 
@@ -132,27 +128,23 @@ stargazer(table, title = "Summary Statistics", header = FALSE, type = "text") # 
 ```{r}
 
 model <- lm(diffMeanChange ~ days + winner + as.numeric(viewership), data = df)
-<<<<<<< HEAD
+
 residuals <- model$residuals
 
 #Ask about what we would plot to look at AC
 ggplot(df, aes(x = days, y = residuals, color = as.factor(winner))) +
   geom_point()
 
-=======
-modelRestricted <- lm(diffMeanChange ~ days + winner, data = df)
-modelRestricted2 <- lm(diffMeanChange ~  winner + as.numeric(viewership), data = df)
-summary(model)
 
 stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days in Theater", "Best Picture Winner", "Oscar Viewership"), dep.var.labels = c("Difference in Mean % BOR Change"), header = FALSE, type = "latex")
->>>>>>> ff320c61d6abef95009b66c8473f1153c29d9fd4
 ```
 
 $$\hat{\theta} = \frac{\frac{0.2033 - .198}{1}}{\frac{1 - .2033}{57 - 4}} \sim F(1, 53)$$
 ```{r}
 var.test(model, modelRestricted2, alternative = "two.sided")
+```
 
-<<<<<<< HEAD
+
 ```{r, checking for autocorrelation}
 dwtest(model) #Falls into AC if we use 3 variables, into IZ if we don't use viewership
 orcuttreg1 <- cochrane.orcutt(model)
