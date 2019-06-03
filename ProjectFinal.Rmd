@@ -14,21 +14,6 @@ library(textclean)
 
 ```
 
-```{r}
-nominees <- read.csv("nominees.csv")
-bestPicture <- subset(nominees, category == "BEST PICTURE" & year > 2007, select = year:entity)
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "True", entity = "Green Book")
-bestPicture <-add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Bohemian Rhapsody")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "The Favourite")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Black Panther")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "BlackKkKlansman")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Vice")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "A Star is Born")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Roma")
-bestPicture <- bestPicture %>% 
-  mutate(entity = ifelse(entity == "Birdman or (The Unexpected Virtue of Ignorance)", "Birdman", entity))
-```
-
 #instead of looking at percent change we could look at absolute gross. In which case we would also need budget. 
 
 #Nominations announced on January 22, 2019 
@@ -44,10 +29,7 @@ findCeremonyDate <- function(date)
   yearOnly <- year(date)
   for (i in ceremonyDates)
   {
-    if (year(i) == yearOnly)
-    {
-      return(i)
-    }
+    ifelse((year(i) == yearOnly), return(i), 1)
   }
   return(NULL)
 }
@@ -68,6 +50,7 @@ awardSeason <- boxoffice(dates = awardDates)
 
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King’s Speech", "The Hurt Locker")
 nominees <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King’s Speech", "Roma", "The Favourite", "Black Panther", "A Star is Born", "BlacKkKlansman", "Bohemian Rhapsody", "Vice", "Three Billboards Outside Eb…", "Dunkirk", "Lady Bird", "Get Out", "The Post", "Darkest Hour", "Call Me by Your Name", "Phantom Thread", "La La Land", "Manchester-by-the Sea", "Hidden Figures", "Fences", "Arrival", "Hacksaw Ridge", "Hell or High Water", "Lion", "The Revenant", "The Big Short", "The Martian", "Mad Max: Fury Road", "Room", "Bridge of Spies", "Brooklyn", "American Sniper", "Boyhood", "The Grand Budapest Hotel", "The Imitation Game", "Selma", "The Theory of Everything", "Whiplash", "Gravity", "American Hustle", "Dallas Buyers Club", "Her", "Philomena", "The Wolf of Wall Street", "Captain Phillips", "Nebraska", "Lincoln", "Zero Dark Thirty", "Les Miserables", "Life of Pi", "Silver Linings Playbook", "Django Unchained", "Armour", "Beasts of the Southern Wild", "The Help", "The Descendants", "Hugo", "Midnight in Paris", "Moneyball", "The Tree of Life", "War Hoarse", "Extremely Loud and Incredib…", "127 Hours", "Black Swan", "The Fighter", "Inception", "The Kids Are All Right", "The Social Network", "Toy Story 3", "True Grit", "Winter's Bone")
+
 df <- awardSeason %>%
   mutate(viewership = cut(year(date), breaks = c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), labels = c(37.6, 39.3, 40.3, 43.7, 36.6, 34.3, 32.9, 26.5, 29.6))) %>% 
   mutate(movie = ifelse(movie == "Birdman or (The Unexpected …", "Birdman", movie)) %>% 
@@ -117,6 +100,8 @@ Creating Summary Statistics and visualizations
 ```{r}
 ggplot(df, aes(x = date, y = diffMeanChange, color = as.factor(winner))) +
   geom_point() 
+
+
 ```
 
 
