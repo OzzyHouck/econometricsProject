@@ -14,21 +14,6 @@ library(textclean)
 
 ```
 
-```{r}
-nominees <- read.csv("nominees.csv")
-bestPicture <- subset(nominees, category == "BEST PICTURE" & year > 2007, select = year:entity)
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "True", entity = "Green Book")
-bestPicture <-add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Bohemian Rhapsody")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "The Favourite")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Black Panther")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "BlackKkKlansman")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Vice")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "A Star is Born")
-bestPicture <- add_row(bestPicture, year = "2018", category = "BEST PICTURE", winner = "False", entity = "Roma")
-bestPicture <- bestPicture %>% 
-  mutate(entity = ifelse(entity == "Birdman or (The Unexpected Virtue of Ignorance)", "Birdman", entity))
-```
-
 #instead of looking at percent change we could look at absolute gross. In which case we would also need budget. 
 
 #Nominations announced on January 22, 2019 
