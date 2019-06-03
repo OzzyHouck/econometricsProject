@@ -157,10 +157,9 @@ stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c(
 ```
 
 
-
-=======
+```{r}
 covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
 coeftest(model, covarianceMatrix)
 ```
 $$PRF: \bar{\Delta}\%BOR^{before} - \bar{\Delta}\%BOR^{after} = Winner + Days$$
->>>>>>> ff320c61d6abef95009b66c8473f1153c29d9fd4
+
