@@ -55,9 +55,11 @@ awardSeason <- boxoffice(dates = awardDates)
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King’s Speech", "The Hurt Locker")
 nominees <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King’s Speech", "Roma", "The Favourite", "Black Panther", "A Star is Born", "BlacKkKlansman", "Bohemian Rhapsody", "Vice", "Three Billboards Outside Eb…", "Dunkirk", "Lady Bird", "Get Out", "The Post", "Darkest Hour", "Call Me by Your Name", "Phantom Thread", "La La Land", "Manchester-by-the Sea", "Hidden Figures", "Fences", "Arrival", "Hacksaw Ridge", "Hell or High Water", "Lion", "The Revenant", "The Big Short", "The Martian", "Mad Max: Fury Road", "Room", "Bridge of Spies", "Brooklyn", "American Sniper", "Boyhood", "The Grand Budapest Hotel", "The Imitation Game", "Selma", "The Theory of Everything", "Whiplash", "Gravity", "American Hustle", "Dallas Buyers Club", "Her", "Philomena", "The Wolf of Wall Street", "Captain Phillips", "Nebraska", "Lincoln", "Zero Dark Thirty", "Les Miserables", "Life of Pi", "Silver Linings Playbook", "Django Unchained", "Armour", "Beasts of the Southern Wild", "The Help", "The Descendants", "Hugo", "Midnight in Paris", "Moneyball", "The Tree of Life", "War Hoarse", "Extremely Loud and Incredib…", "127 Hours", "Black Swan", "The Fighter", "Inception", "The Kids Are All Right", "The Social Network", "Toy Story 3", "True Grit", "Winter's Bone")
 
-allNominees <- read.csv("allNominees.csv", header = T)
+allNominees <- read.csv("allNominees.csv", header = T) %>% 
+  rename(movie = Film) %>% 
+  select(movie, Awards)
 otherAwards <- allNominees %>% 
-  filter(allNominees$Film %in% nominees & !allNominees$Film %in% winners) 
+  filter(allNominees$Film %in% nominees) 
 
 df <- awardSeason %>%
   mutate(viewership = cut(year(date), breaks = c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), labels = c(37.6, 39.3, 40.3, 43.7, 36.6, 34.3, 32.9, 26.5, 29.6))) %>% 
@@ -69,6 +71,8 @@ df <- awardSeason %>%
   mutate(after = ifelse(date >= findCeremonyDate(date), 1, 0)) %>%  #before or after ceremony
   mutate(friSat = ifelse(wday(date) == 7 | wday(date) == 6, 1, 0)) %>% #Mark if day is weekend
   ungroup() %>% 
+  left_join(allNominees, by = "movie") %>% 
+  mutate(Awards = ifelse(is.na(Awards), 0, Awards))
   drop_na()
 
 
@@ -113,10 +117,13 @@ Dates of Oscar ceromonies
 Creating Summary Statistics and visualizations
 
 ```{r}
-df %>% 
-  #filter(year(date) == "2019") %>% 
-  ggplot(aes(x = date, y = percent_change, color = as.factor(friSat))) +
-  geom_point() 
+awardSeason %>% 
+  filter(year(date) == "2019") %>% 
+  filter(days <10000) %>% 
+  filter(percent_change < 500) %>% 
+  ggplot(aes(x = days, y = percent_change)) +
+  geom_point() +
+  geom_smooth()
 
 table <- df %>%
   select(diffMeanChange, days)
@@ -129,23 +136,19 @@ temp <- df %>% #Keep an eye on these
 stargazer(table, title = "Summary Statistics", header = FALSE, type = "text") # Why does this not work?
 ```
 
-```{r}
-
-<<<<<<< HEAD
-model <- lm(diffMeanChange ~ days + winner + as.numeric(viewership) + otherAwards$Awards, data = df)
-modelRestricted <- lm(diffMeanChange ~ days + winner, data = df)
-modelRestricted2 <- lm(diffMeanChange ~  winner + as.numeric(viewership), data = df)
-summary(model)
-=======
-model <- lm(diffMeanChange ~ days + winner + as.numeric(viewership), data = df)
-
+```{r, initial models}
+dfWinner <- df %>% 
+  filter(winner == 1)
+dfLoser <- df %>% 
+  filter(winner == 0)
+model <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + winner, data = df)
 residuals <- model$residuals
+```
 
 #Ask about what we would plot to look at AC
+```{r}
 ggplot(df, aes(x = days, y = residuals, color = as.factor(winner))) +
   geom_point()
-
->>>>>>> 13311a8c225b8f1107c2e0f9db342a442f8463e2
 
 stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days in Theater", "Best Picture Winner", "Oscar Viewership"), dep.var.labels = c("Difference in Mean % BOR Change"), header = FALSE, type = "latex")
 ```
