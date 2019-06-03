@@ -11,7 +11,8 @@ library(boxoffice)
 library(tidyverse)
 library(lubridate)
 library(textclean)
-
+library(sandwich)
+library(lmtest)
 ```
 
 #instead of looking at percent change we could look at absolute gross. In which case we would also need budget. 
@@ -107,8 +108,13 @@ ggplot(df, aes(x = date, y = diffMeanChange, color = as.factor(winner))) +
 
 Let's be stupid and prematurly run a regression!
 ```{r}
+
 model <- lm(diffMeanChange ~ days + winner + as.numeric(viewership), data = df)
+modelRestricted <- lm(diffMeanChange ~ days + winner, data = df)
+modelRestricted2 <- lm(diffMeanChange ~  winner + as.numeric(viewership), data = df)
 summary(model)
+
+stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days in Theater", "Best Picture Winner", "Oscar Viewership"), dep.var.labels = c("Difference in Mean % BOR Change"), header = FALSE, type = "latex")
 ```
 2019  29.6
 2018	26.5
@@ -120,6 +126,11 @@ summary(model)
 2012	39.3
 2011	37.6
 
+$$\hat{\theta} = \frac{\frac{0.2033 - .198}{1}}{\frac{1 - .2033}{57 - 4}} \sim F(1, 53)$$
+```{r}
+var.test(model, modelRestricted2, alternative = "two.sided")
 
-
-
+covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
+coeftest(model, covarianceMatrix)
+```
+$$PRF: \bar{\Delta}\%BOR^{before} - \bar{\Delta}\%BOR^{after} = Winner + Days$$
