@@ -60,7 +60,7 @@ allNominees <- read.csv("allNominees.csv", header = T) %>%
   rename(movie = Film) %>% 
   select(movie, Awards)
 otherAwards <- allNominees %>% 
-  filter(allNominees$Film %in% nominees) 
+  filter(allNominees$movie %in% nominees) 
 
 df <- awardSeason %>%
   mutate(viewership = cut(year(date), breaks = c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), labels = c(37.6, 39.3, 40.3, 43.7, 36.6, 34.3, 32.9, 26.5, 29.6))) %>% 
@@ -126,8 +126,8 @@ awardSeason %>%
   geom_point() +
   geom_smooth()
 
-table <- df %>%
-  select(diffMeanChange, days)
+#table <- df %>%
+#  select(diffMeanChange, days)
 
 temp <- df %>% #Keep an eye on these
   filter(percent_change > 300)
@@ -143,12 +143,13 @@ dfWinner <- df %>%
 dfLoser <- df %>% 
   filter(winner == 0)
 model <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + winner, data = df)
+modelRestricted <- lm(percent_change ~ days + friSat + winner, data = df) #+ as.numeric(viewership) + Awards
 residuals <- model$residuals
 ```
 
 #Ask about what we would plot to look at AC
 ```{r}
-ggplot(df, aes(x = days, y = residuals, color = as.factor(winner))) +
+ggplot(df, aes(x = days, y = residuals)) +
   geom_point()
 
 stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days in Theater", "Best Picture Winner", "Oscar Viewership"), dep.var.labels = c("Difference in Mean % BOR Change"), header = FALSE, type = "latex")
@@ -156,7 +157,7 @@ stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days
 
 $$\hat{\theta} = \frac{\frac{0.2033 - .198}{1}}{\frac{1 - .2033}{57 - 4}} \sim F(1, 53)$$
 ```{r}
-var.test(model, modelRestricted2, alternative = "two.sided")
+var.test(model, modelRestricted, alternative = "two.sided")
 ```
 
 
@@ -174,5 +175,5 @@ stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c(
 covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
 coeftest(model, covarianceMatrix)
 ```
-$$PRF: \bar{\Delta}\%BOR^{before} - \bar{\Delta}\%BOR^{after} = Winner + Days$$
+$$PRF: \Delta\%BOR = D^{Winner} + Days + Viewership + D^{FriSat} + Awards $$
 
