@@ -11,7 +11,10 @@ library(boxoffice)
 library(tidyverse)
 library(lubridate)
 library(textclean)
-
+library(stargazer)
+library(lmtest)
+library(orcutt)
+library(tseries)
 ```
 
 #instead of looking at percent change we could look at absolute gross. In which case we would also need budget. 
@@ -55,26 +58,31 @@ df <- awardSeason %>%
   mutate(viewership = cut(year(date), breaks = c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), labels = c(37.6, 39.3, 40.3, 43.7, 36.6, 34.3, 32.9, 26.5, 29.6))) %>% 
   mutate(movie = ifelse(movie == "Birdman or (The Unexpected …", "Birdman", movie)) %>% 
   filter(movie %in% nominees) %>%  
-  filter(movie != "Black Panther") %>%  #in theaters during previous award season
+  filter(movie != "Black Panther" & movie != "The Grand Budapest Hotel" & movie != "Get Out") %>%  #in theaters during previous award season
   mutate(winner = ifelse(movie %in% winners, 1, 0)) %>% #dummy to denote a winner
   group_by(date) %>% 
-  mutate(movie2 = ifelse(date <= findCeremonyDate(date), sub("^", "Before: ", movie) , movie)) %>%  #Add new column which divides the movie names into before and after.
+  mutate(after = ifelse(date >= findCeremonyDate(date), 1, 0)) %>%  #before or after ceremony
+  mutate(friSat = ifelse(wday(date) == 7 | wday(date) == 6, 1, 0)) %>% #Mark if day is weekend
   ungroup() %>% 
   drop_na()
-df <- df %>% 
-  left_join(df %>% #weird thing in which I calculate the percentage change for each movie in each timer period and then join those values to the big table
-              group_by(movie2) %>% 
-              summarise(meanChange = mean(percent_change)), by = "movie2") %>% 
-  group_by(movie2) %>% 
-  slice(n()) # takes entry for each movie in each time period
 
-df <- df %>% 
-  left_join(df %>% 
-              group_by(movie) %>%
-              summarise(diffMeanChange = meanChange[2] - meanChange[1]), by = "movie") %>% 
-  group_by(movie) %>% 
-  filter(!grepl('Before:', movie2)) %>% 
-  drop_na()
+
+
+# df <- df %>% 
+#   left_join(df %>% #weird thing in which I calculate the percentage change for each movie in each timer period and then join those values to the big table
+#               group_by(movie2) %>% 
+#               summarise(meanChange = mean(percent_change)), by = "movie2") %>% 
+#   group_by(movie2) %>% 
+#   slice(n()) # takes entry for each movie in each time period
+# 
+# df <- df %>% 
+#   left_join(df %>% 
+#               group_by(movie) %>%
+#               summarise(diffMeanChange = meanChange[2] - meanChange[1]), by = "movie") %>% 
+#   group_by(movie) %>% 
+#   filter(!grepl('Before:', movie2)) %>% 
+#   ungroup() %>% 
+#   drop_na()
 
 
 
@@ -92,34 +100,51 @@ Dates of Oscar ceromonies
 	February 27, 2011: The King's Speech
 	March 7, 2010: The Hurt Locker
 	
+	Control for other movies that won
+	
 	
 	
 	
 Creating Summary Statistics and visualizations
 
 ```{r}
-ggplot(df, aes(x = date, y = diffMeanChange, color = as.factor(winner))) +
+df %>% 
+  #filter(year(date) == "2019") %>% 
+  ggplot(aes(x = date, y = percent_change, color = as.factor(friSat))) +
   geom_point() 
 
+table <- df %>%
+  select(diffMeanChange, days)
 
+temp <- df %>% #Keep an eye on these
+  filter(percent_change > 300)
 ```
 
+```{r, results = 'asis', echo = F} 
+stargazer(table, title = "Summary Statistics", header = FALSE, type = "text") # Why does this not work?
+```
 
-Let's be stupid and prematurly run a regression!
 ```{r}
 model <- lm(diffMeanChange ~ days + winner + as.numeric(viewership), data = df)
-summary(model)
-```
-2019  29.6
-2018	26.5
-2017	32.9
-2016	34.3
-2015	36.6
-2014	43.7
-2013	40.3
-2012	39.3
-2011	37.6
+residuals <- model$residuals
 
+#Ask about what we would plot to look at AC
+ggplot(df, aes(x = days, y = residuals, color = as.factor(winner))) +
+  geom_point()
+
+```
+
+
+```{r, checking for autocorrelation}
+dwtest(model) #Falls into AC if we use 3 variables, into IZ if we don't use viewership
+orcuttreg1 <- cochrane.orcutt(model)
+summary(orcuttreg1) #For sure no AC now!
+```
+
+
+```{r, results = 'asis', echo = F}
+stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c("Difference in Percent Change in Revenue"), covariate.labels = c("Best Picture Winner", "Days in Theatres", "Veiwership (millions)"), header = FALSE)
+```
 
 
 
