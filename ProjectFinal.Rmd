@@ -39,16 +39,23 @@ findCeremonyDate <- function(date)
 }
 
 awardDates <- c()
+awardDates2 <- c()
 
 for (i in ceremonyDates)
 {
-  dates <- format(seq(from = as.Date(i) - 14, to = as.Date(i) + 14, by = "day"),
+  dates <- format(seq(from = as.Date(i) - 21, to = as.Date(i) + 7, by = "day"),
                   format="%Y/%m/%d")
   awardDates <- c(awardDates, dates)
+  
+  dates2 <- format(seq(from = as.Date(i) - 21, to = as.Date(i) + 14, by = "day"),
+                  format="%Y/%m/%d")
+  awardDates2 <- c(awardDates2, dates2)
 }
 awardDates <- as.Date(awardDates)
+awardDates2 <- as.Date(awardDates2)
 
 awardSeason <- boxoffice(dates = awardDates)
+awardSeason2 <- boxoffice(dates = awardDates2)
  
 #filters our awards season data by nominees 
 
@@ -59,8 +66,6 @@ nominees <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Bir
 allNominees <- read.csv("allNominees.csv", header = T) %>% 
   rename(movie = Film) %>% 
   select(movie, Awards)
-otherAwards <- allNominees %>% 
-  filter(allNominees$movie %in% nominees) 
 
 df <- awardSeason %>%
   mutate(viewership = cut(year(date), breaks = c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), labels = c(37.6, 39.3, 40.3, 43.7, 36.6, 34.3, 32.9, 26.5, 29.6))) %>% 
@@ -73,7 +78,21 @@ df <- awardSeason %>%
   mutate(friSat = ifelse(wday(date) == 7 | wday(date) == 6, 1, 0)) %>% #Mark if day is weekend
   ungroup() %>% 
   left_join(allNominees, by = "movie") %>% 
-  mutate(Awards = ifelse(is.na(Awards), 0, Awards))
+  mutate(Awards = ifelse(is.na(Awards), 0, Awards)) %>% 
+  drop_na()
+
+df2 <- awardSeason2 %>%
+  mutate(viewership = cut(year(date), breaks = c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), labels = c(37.6, 39.3, 40.3, 43.7, 36.6, 34.3, 32.9, 26.5, 29.6))) %>% 
+  mutate(movie = ifelse(movie == "Birdman or (The Unexpected …", "Birdman", movie)) %>% 
+  filter(movie %in% nominees) %>%  
+  filter(movie != "Black Panther" & movie != "The Grand Budapest Hotel" & movie != "Get Out") %>%  #in theaters during previous award season
+  mutate(winner = ifelse(movie %in% winners, 1, 0)) %>% #dummy to denote a winner
+  group_by(date) %>% 
+  mutate(after = ifelse(date >= findCeremonyDate(date), 1, 0)) %>%  #before or after ceremony
+  mutate(friSat = ifelse(wday(date) == 7 | wday(date) == 6, 1, 0)) %>% #Mark if day is weekend
+  ungroup() %>% 
+  left_join(allNominees, by = "movie") %>% 
+  mutate(Awards = ifelse(is.na(Awards), 0, Awards)) %>% 
   drop_na()
 
 
@@ -138,20 +157,41 @@ stargazer(table, title = "Summary Statistics", header = FALSE, type = "text") # 
 ```
 
 ```{r, initial models}
-dfWinner <- df %>% 
-  filter(winner == 1)
-dfLoser <- df %>% 
-  filter(winner == 0)
+model <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after, data = df)
+summary(model)
 
-modelWinner <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + after, data = dfWinner)
-modelLoser <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + after, data = dfLoser)
-
-
-model <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + after:winner + after, data = df)
+model2 <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after, data = df2)
 summary(model)
 
 residuals <- model$residuals
 ```
+
+Call:
+lm(formula = percent_change ~ days + as.numeric(viewership):after + 
+    friSat + Awards:after + after:winner + after, data = df)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-181.99  -26.79   -6.41   19.67  842.01 
+
+Coefficients:
+                              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                  -31.37622    3.64866  -8.599  < 2e-16 ***
+days                           0.13514    0.03476   3.888 0.000105 ***
+friSat                       120.09228    3.00919  39.909  < 2e-16 ***
+after                        -19.64910    6.46045  -3.041 0.002393 ** 
+as.numeric(viewership):after   2.05316    1.02874   1.996 0.046124 *  
+after:Awards                   1.44220    1.32748   1.086 0.277458    
+after:winner                  12.94311    7.57335   1.709 0.087638 .  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 53.8 on 1601 degrees of freedom
+Multiple R-squared:  0.5059,	Adjusted R-squared:  0.504 
+F-statistic: 273.2 on 6 and 1601 DF,  p-value: < 2.2e-16
+
+
+
 
 #Ask about what we would plot to look at AC
 ```{r}
