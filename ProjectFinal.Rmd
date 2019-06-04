@@ -148,6 +148,7 @@ modelLoser <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Award
 
 
 model <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + after:winner + after, data = df)
+modelRestricted <- lm(percent_change ~ days + friSat + Awards + after:winner + after, data = df) # + as.numeric(viewership)
 summary(model)
 
 residuals <- model$residuals
@@ -178,8 +179,8 @@ summary(orcuttreg1) #For sure no AC now!
 stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c("Difference in Percent Change in Revenue"), covariate.labels = c("Best Picture Winner", "Days in Theatres", "Veiwership (millions)"), header = FALSE)
 
 
-covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
-coeftest(model, covarianceMatrix)
+covarianceMatrix <- vcovHC(orcuttreg1, type = "HC0") #HCO gives White's estimator
+coeftest(orcuttreg1, covarianceMatrix)
 ```
-$$PRF: \Delta\%BOR = D^{Winner} + Days + Viewership + D^{FriSat} + Awards $$
+$$PRF: \frac{BOR_t - BOR_{t-1}}{BOR_{t-1}} = D^{After}*D^{Winner} + D^{After}*Awards + D^{After}*Viewership + D^{After} + Days + D^{FriSat} $$
 
