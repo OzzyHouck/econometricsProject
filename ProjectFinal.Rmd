@@ -160,14 +160,6 @@ stargazer(table, title = "Summary Statistics", header = FALSE, type = "text") # 
 model <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after, data = df)
 summary(model)
 
-<<<<<<< HEAD
-model <- lm(percent_change ~ days + as.numeric(viewership) + friSat + Awards + after:winner + after, data = df)
-modelRestricted <- lm(percent_change ~ days + friSat + Awards + after:winner + after, data = df) # + as.numeric(viewership)
-=======
-model2 <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after, data = df2)
->>>>>>> 377a5951853f504b189d6a82bcfb2bbfd9e572c5
-summary(model)
-
 residuals <- model$residuals
 ```
 
