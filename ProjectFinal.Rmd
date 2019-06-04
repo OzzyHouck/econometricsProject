@@ -159,8 +159,10 @@ stargazer(table, title = "Summary Statistics", header = FALSE, type = "text") # 
 ```{r, initial models}
 model <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after, data = df)
 summary(model)
-
-residuals <- model$residuals
+stargazer(model, title = "1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
+model2 <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after, data = df2)
+summary(model2)
+stargazer(model2, title = "1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
 ```
 
 Call:
@@ -192,15 +194,15 @@ F-statistic: 273.2 on 6 and 1601 DF,  p-value: < 2.2e-16
 
 #Ask about what we would plot to look at AC
 ```{r}
-ggplot(df, aes(x = days, y = residuals)) +
+ggplot(df, aes(x = days, y = model$residuals)) +
   geom_point()
-
-stargazer(model, title = "Initial Model", digits = 5, covariate.labels = c("Days in Theater", "Best Picture Winner", "Oscar Viewership"), dep.var.labels = c("Difference in Mean % BOR Change"), header = FALSE, type = "text")
+ggplot(df2, aes(x = days, y = model2$residuals)) +
+  geom_point()
 ```
 
 $$\hat{\theta} = \frac{\frac{0.2033 - .198}{1}}{\frac{1 - .2033}{57 - 4}} \sim F(1, 53)$$
 ```{r}
-var.test(model, modelRestricted, alternative = "two.sided")
+var.test(model, model2, alternative = "two.sided")
 ```
 
 
@@ -208,13 +210,16 @@ var.test(model, modelRestricted, alternative = "two.sided")
 dwtest(model) #Falls into AC if we use 3 variables, into IZ if we don't use viewership
 orcuttreg1 <- cochrane.orcutt(model)
 summary(orcuttreg1) #For sure no AC now!
+stargazer(orcuttreg1, title = "(AC Corrected)1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
+
+dwtest(model2)
+orcuttreg2 <- cochrane.orcutt(model2)
+summary(orcuttreg2) #For sure no AC now!
+stargazer(orcuttreg2, title = "(AC Corrected)2-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
 ```
 
 
 ```{r, results = 'asis', echo = F}
-stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c("Difference in Percent Change in Revenue"), covariate.labels = c("Best Picture Winner", "Days in Theatres", "Veiwership (millions)"), header = FALSE)
-
-
 covarianceMatrix <- vcovHC(orcuttreg1, type = "HC0") #HCO gives White's estimator
 coeftest(orcuttreg1, covarianceMatrix)
 ```
