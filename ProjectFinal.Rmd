@@ -19,7 +19,7 @@ library(sandwich)
 ```
 
 
-```{r data fetching and cleaning}
+```{r data fetching and cleaning, echo = F}
 ceremonyDates <- c("2019/2/24", "2018/3/04", "2017/2/26",  "2016/2/28","2015/2/22", "2014/3/02", "2013/2/24", "2012/2/26", "2011/2/27", "2010/3/07")
 
 findCeremonyDate <- function(date) 
@@ -73,7 +73,7 @@ df <- awardSeason %>%
   drop_na()
 ```
 	
-```{r Summary Statistics and visualizations}
+```{r Summary Statistics and visualizations, echo = F}
 awardSeason %>% 
   filter(year(date) == "2019") %>% 
   filter(days <10000) %>% 
@@ -93,14 +93,14 @@ temp <- df %>% #Keep an eye on these
 #stargazer(df, title = "Summary Statistics", header = FALSE, type = "text") # Why does this not work?
 ```
 
-```{r  initial models, results = 'asis'}
+```{r  initial models, results = 'asis', echo = F}
 
 model <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after + winner:daysAfter, data = df)
 #summary(model)
 
 #residuals <- model$residuals
 
-stargazer(model, title = "Uncorrected Model: Best Picture Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Total Academy Awards Won", "Best Picture Winner", "Oscar Bump Decay"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "Latex")
+stargazer(model, title = "Uncorrected Model: Best Picture Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Total Academy Awards Won", "Best Picture Winner", "Oscar Bump Decay"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "latex")
 
 ```
 
@@ -108,7 +108,7 @@ stargazer(model, title = "Uncorrected Model: Best Picture Oscar Bump", digits = 
 
 
 
-```{r residual plot}
+```{r residual plot, echo = F}
 #Ask about what we would plot to look at AC
 ggplot(df, aes(x = days, y = model$residuals)) +
   geom_point()
@@ -116,7 +116,7 @@ ggplot(df, aes(x = days, y = model$residuals)) +
 ```
 
 
-```{r checking for autocorrelation}
+```{r checking for autocorrelation, echo = F}
 ACtest <- df %>%
   group_by(movie) %>%
   do(model = lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after, data = df)) %>%
@@ -128,16 +128,16 @@ temp <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Award
 dwtest(temp)
 ```
 
-```{r testing and correcting Hskedat, results = 'asis' }
+```{r testing and correcting Hskedat, results = 'asis' , echo = F}
 #testing for H
 bptest(model) #Very small p-value so we have H
 covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
 finalModel <- coeftest(model, covarianceMatrix)
-stargazer(finalModel, title = "White-Corrected Model: Best Picture Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Total Academy Awards Won", "Best Picture Winner", "Oscar Bump Decay"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "Latex")
+stargazer(finalModel, title = "White-Corrected Model: Best Picture Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Total Academy Awards Won", "Best Picture Winner", "Oscar Bump Decay"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "latex")
 ```
 
 
-```{r cut stuff I didnt feel comfortable deleting}
+```{r cut stuff I didnt feel comfortable deleting, echo = F}
 # df <- df %>% 
 #   left_join(df %>% #weird thing in which I calculate the percentage change for each movie in each timer period and then join those values to the big table
 #               group_by(movie2) %>% 
