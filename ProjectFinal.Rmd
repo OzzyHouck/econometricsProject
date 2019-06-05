@@ -1,11 +1,11 @@
 ---
-title: "Econometrics Final Project"
-author: "Ozzy Houck"
+title: "Best Picture Bump: Finding the Value of a Best Picture Oscar"
+author: "Ozzy Houck & Conor Gormally"
 date: "May 15, 2019"
-output: html_document
+output: pdf_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, echo = F}
 knitr::opts_chunk$set(echo = TRUE)
 library(boxoffice)
 library(tidyverse)
@@ -18,14 +18,8 @@ library(tseries)
 library(sandwich)
 ```
 
-#instead of looking at percent change we could look at absolute gross. In which case we would also need budget. 
 
-#Nominations announced on January 22, 2019 
-#Awards ceremony was February 24, 2019
-
-#Day of Oscar announcment Feb 4 2017
-# Day of Oscar ceremony Feb 26 2017
-```{r}
+```{r data fetching and cleaning}
 ceremonyDates <- c("2019/2/24", "2018/3/04", "2017/2/26",  "2016/2/28","2015/2/22", "2014/3/02", "2013/2/24", "2012/2/26", "2011/2/27", "2010/3/07")
 
 findCeremonyDate <- function(date) 
@@ -56,10 +50,11 @@ awardSeason <- boxoffice(dates = awardDates)
 winners <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King’s Speech", "The Hurt Locker")
 nominees <- c("Green Book", "The Shape of Water", "Moonlight", "Spotlight", "Birdman", "12 Years a Slave", "Argo", "The Artist", "The King’s Speech", "Roma", "The Favourite", "Black Panther", "A Star is Born", "BlacKkKlansman", "Bohemian Rhapsody", "Vice", "Three Billboards Outside Eb…", "Dunkirk", "Lady Bird", "Get Out", "The Post", "Darkest Hour", "Call Me by Your Name", "Phantom Thread", "La La Land", "Manchester-by-the Sea", "Hidden Figures", "Fences", "Arrival", "Hacksaw Ridge", "Hell or High Water", "Lion", "The Revenant", "The Big Short", "The Martian", "Mad Max: Fury Road", "Room", "Bridge of Spies", "Brooklyn", "American Sniper", "Boyhood", "The Grand Budapest Hotel", "The Imitation Game", "Selma", "The Theory of Everything", "Whiplash", "Gravity", "American Hustle", "Dallas Buyers Club", "Her", "Philomena", "The Wolf of Wall Street", "Captain Phillips", "Nebraska", "Lincoln", "Zero Dark Thirty", "Les Miserables", "Life of Pi", "Silver Linings Playbook", "Django Unchained", "Armour", "Beasts of the Southern Wild", "The Help", "The Descendants", "Hugo", "Midnight in Paris", "Moneyball", "The Tree of Life", "War Hoarse", "Extremely Loud and Incredib…", "127 Hours", "Black Swan", "The Fighter", "Inception", "The Kids Are All Right", "The Social Network", "Toy Story 3", "True Grit", "Winter's Bone")
 
-
+#Grabs the list of best picture nominees and the number of total Academy awards won by them
 allNominees <- read.csv("allNominees.csv", header = T) %>% 
   rename(movie = Film) %>% 
   select(movie, Awards)
+
 
 df <- awardSeason %>%
   mutate(viewership = cut(year(date), breaks = c(2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019), labels = c(37.6, 39.3, 40.3, 43.7, 36.6, 34.3, 32.9, 26.5, 29.6))) %>% 
@@ -76,9 +71,73 @@ df <- awardSeason %>%
   mutate(Awards = ifelse(is.na(Awards), 0, Awards)) %>% 
   arrange(movie) %>% 
   drop_na()
+```
+	
+```{r Summary Statistics and visualizations}
+awardSeason %>% 
+  filter(year(date) == "2019") %>% 
+  filter(days <10000) %>% 
+  filter(percent_change < 500) %>% 
+  ggplot(aes(x = days, y = percent_change)) +
+  geom_point() +
+  geom_smooth()
+
+#table <- df %>%
+#  select(diffMeanChange, days)
+
+temp <- df %>% #Keep an eye on these
+  filter(percent_change > 300)
+```
+
+```{r summary statistics,  results = 'asis', echo = F} 
+#stargazer(df, title = "Summary Statistics", header = FALSE, type = "text") # Why does this not work?
+```
+
+```{r  initial models, results = 'asis'}
+
+model <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after + winner:daysAfter, data = df)
+#summary(model)
+
+#residuals <- model$residuals
+
+stargazer(model, title = "Uncorrected Model: Best Picture Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Total Academy Awards Won", "Best Picture Winner", "Oscar Bump Decay"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "Latex")
+
+```
 
 
 
+
+
+```{r residual plot}
+#Ask about what we would plot to look at AC
+ggplot(df, aes(x = days, y = model$residuals)) +
+  geom_point()
+
+```
+
+
+```{r checking for autocorrelation}
+ACtest <- df %>%
+  group_by(movie) %>%
+  do(model = lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after, data = df)) %>%
+  mutate(dstat = dwtest(model)$statistic) %>% 
+  select(movie, dstat)
+temp <- df %>% 
+  filter(movie == "Spotlight")
+temp <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after, data = temp)
+dwtest(temp)
+```
+
+```{r testing and correcting Hskedat, results = 'asis' }
+#testing for H
+bptest(model) #Very small p-value so we have H
+covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
+finalModel <- coeftest(model, covarianceMatrix)
+stargazer(finalModel, title = "White-Corrected Model: Best Picture Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Total Academy Awards Won", "Best Picture Winner", "Oscar Bump Decay"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "Latex")
+```
+
+
+```{r cut stuff I didnt feel comfortable deleting}
 # df <- df %>% 
 #   left_join(df %>% #weird thing in which I calculate the percentage change for each movie in each timer period and then join those values to the big table
 #               group_by(movie2) %>% 
@@ -95,116 +154,22 @@ df <- awardSeason %>%
 #   ungroup() %>% 
 #   drop_na()
 
-
-
-```
-Dates of Oscar ceromonies
-
-	February 24, 2019: Green Book
-	March 4, 2018: The Shape of Water
-	February 26, 2017: Moonlight
-	February 28, 2016: Spotlight
-	February 22, 2015: Birdman
-	March 2, 2014: 12 Years a Slave
-	February 24, 2013: Argo
-	February 26, 2012: The Artist
-	February 27, 2011: The King's Speech
-	March 7, 2010: The Hurt Locker
-	
-	Control for other movies that won
-	
-	
-	
-	
-Creating Summary Statistics and visualizations
-
-```{r}
-awardSeason %>% 
-  filter(year(date) == "2019") %>% 
-  filter(days <10000) %>% 
-  filter(percent_change < 500) %>% 
-  ggplot(aes(x = days, y = percent_change)) +
-  geom_point() +
-  geom_smooth()
-
-#table <- df %>%
-#  select(diffMeanChange, days)
-
-temp <- df %>% #Keep an eye on these
-  filter(percent_change > 300)
-```
-
-```{r, results = 'asis', echo = F} 
-stargazer(df, title = "Summary Statistics", header = FALSE, type = "text") # Why does this not work?
-```
-
-```{r, initial models}
-
-model <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after + winner:daysAfter, data = df)
-summary(model)
-
-residuals <- model$residuals
-
-stargazer(model, title = "1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
-model2 <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after:winner + after, data = df2)
-summary(model2)
-stargazer(model2, title = "1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
-
-```
-
-
-
-
-#Ask about what we would plot to look at AC
-```{r}
-
-ggplot(df, aes(x = days, y = model$residuals)) +
-  geom_point()
-
-```
-
-$$\hat{\theta} = \frac{\frac{0.2033 - .198}{1}}{\frac{1 - .2033}{57 - 4}} \sim F(1, 53)$$
-```{r}
-var.test(model, model2, alternative = "two.sided")
-```
-
-
-```{r, checking for autocorrelation}
-ACtest <- df %>%
-  group_by(movie) %>%
-  do(model = lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after, data = df)) %>%
-  mutate(dstat = dwtest(model)$statistic) %>% 
-  select(movie, dstat)
-temp <- df %>% 
-  filter(movie == "Spotlight")
-temp <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Awards:after + after, data = temp)
-dwtest(temp)
+#var.test(model, model2, alternative = "two.sided")
 
 #testing for AC
 #Falls into AC if we use 3 variables, into IZ if we don't use viewership
-orcuttreg1 <- cochrane.orcutt(model)
-summary(orcuttreg1) #For sure no AC now!
+#orcuttreg1 <- cochrane.orcutt(model)
+#summary(orcuttreg1) #For sure no AC now!
+#stargazer(orcuttreg1, title = "(AC Corrected)1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
+#temp$statistic
 
-temp$statistic
-#testing for H
-bptest(model) #Very small p-value so we have H
-covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
-coeftest(model, covarianceMatrix)
+#Dates of Oscar ceromonies: February 24, 2019: Green Book; March 4, 2018: The Shape of Water; February 26, 2017: Moonlight; February 28, 2016: Spotlight; February 22, 2015: Birdman; March 2, 2014: 12 Years a Slave;	February 24, 2013: Argo; February 26, 2012: The Artist; February 27, 2011: The King's Speech;	March 7, 2010: The Hurt Locker; Control for other movies that won
 
-stargazer(orcuttreg1, title = "(AC Corrected)1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
+#stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c("Difference in Percent Change in Revenue"), covariate.labels = c("Best Picture Winner", "Days in Theatres", "Veiwership (millions)"), header = FALSE)
 
 
+#covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator
+#finalModel <- coeftest(model, covarianceMatrix)
+#stargazer(finalModel, title = "(AC Corrected)1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text")
 ```
-
-
-```{r, results = 'asis', echo = F}
-
-stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c("Difference in Percent Change in Revenue"), covariate.labels = c("Best Picture Winner", "Days in Theatres", "Veiwership (millions)"), header = FALSE)
-
-
-covarianceMatrix <- vcovHC(orcuttreg1, type = "HC0") #HCO gives White's estimator
-coeftest(orcuttreg1, covarianceMatrix)
-
-```
-$$PRF: \frac{BOR_t - BOR_{t-1}}{BOR_{t-1}} = D^{After}*D^{Winner} + D^{After}*Awards + D^{After}*Viewership + D^{After} + Days + D^{FriSat} $$
 
