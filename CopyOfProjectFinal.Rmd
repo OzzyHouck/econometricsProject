@@ -1,8 +1,10 @@
 ---
-title: "Best Picture Bump: Finding the Value of a Best Picture Oscar"
+title: 'Best Picture Bump: Finding the Value of a Best Picture Oscar'
 author: "Ozzy Houck & Conor Gormally"
 date: "May 15, 2019"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE, echo = F, warning = F, message = F}
@@ -78,21 +80,14 @@ df <- awardSeason %>%
   arrange(movie) %>% 
   #ungroup() %>% 
   drop_na()
-```
-	
 
-
-
-```{r  initial models, results = 'asis', echo = F, warning = F, message = F}
 temp <- df %>% 
   filter(percent_change > 500)
 
 model <- lm(percent_change ~ days + viewership:after + friSat + Awards:after + after:winner + after + winner:daysAfter, data = temp)
 summary(model)
-
-
 ```
-
+	
 
 
 
@@ -108,46 +103,6 @@ temp <- lm(percent_change ~ days + as.numeric(viewership):after + friSat + Award
 dwtest(temp)
 ```
 
-
-
-
-
-<!-- ```{r cut stuff I didnt feel comfortable deleting, echo = F} -->
-<!-- 1+1 -->
-<!-- # df <- df %>%  -->
-<!-- #   left_join(df %>% #weird thing in which I calculate the percentage change for each movie in each timer period and then join those values to the big table -->
-<!-- #               group_by(movie2) %>%  -->
-<!-- #               summarise(meanChange = mean(percent_change)), by = "movie2") %>%  -->
-<!-- #   group_by(movie2) %>%  -->
-<!-- #   slice(n()) # takes entry for each movie in each time period -->
-<!-- #  -->
-<!-- # df <- df %>%  -->
-<!-- #   left_join(df %>%  -->
-<!-- #               group_by(movie) %>% -->
-<!-- #               summarise(diffMeanChange = meanChange[2] - meanChange[1]), by = "movie") %>%  -->
-<!-- #   group_by(movie) %>%  -->
-<!-- #   filter(!grepl('Before:', movie2)) %>%  -->
-<!-- #   ungroup() %>%  -->
-<!-- #   drop_na() -->
-
-<!-- #var.test(model, model2, alternative = "two.sided") -->
-
-<!-- #testing for AC -->
-<!-- #Falls into AC if we use 3 variables, into IZ if we don't use viewership -->
-<!-- #orcuttreg1 <- cochrane.orcutt(model) -->
-<!-- #summary(orcuttreg1) #For sure no AC now! -->
-<!-- #stargazer(orcuttreg1, title = "(AC Corrected)1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text") -->
-<!-- #temp$statistic -->
-
-<!-- #Dates of Oscar ceromonies: February 24, 2019: Green Book; March 4, 2018: The Shape of Water; February 26, 2017: Moonlight; February 28, 2016: Spotlight; February 22, 2015: Birdman; March 2, 2014: 12 Years a Slave;	February 24, 2013: Argo; February 26, 2012: The Artist; February 27, 2011: The King's Speech;	March 7, 2010: The Hurt Locker; Control for other movies that won -->
-
-<!-- #stargazer(orcuttreg1, title = "", digits = 3, type = "text", dep.var.labels = c("Difference in Percent Change in Revenue"), covariate.labels = c("Best Picture Winner", "Days in Theatres", "Veiwership (millions)"), header = FALSE) -->
-
-
-<!-- #covarianceMatrix <- vcovHC(model, type = "HC0") #HCO gives White's estimator -->
-<!-- #finalModel <- coeftest(model, covarianceMatrix) -->
-<!-- #stargazer(finalModel, title = "(AC Corrected)1-Week Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Academy Awards Won", "Best Picture Winner"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "text") -->
-<!-- ``` -->
 
 
 
@@ -168,6 +123,7 @@ $$SRF: \frac{BOR_t - BOR_{t-1}}{BOR_{t-1}} = D^{After}*D^{Winner} + DaysAfter*D^
 The second added variable is “daysAfter,” which is zero in the days before the ceremony and only begins to count up after the awards show occurs. We expect that the “Oscar Bump” will be bigger immediately after the ceremony and then decrease over time. To account for this, we add an interaction term between the dummy variable for whether a movie won best picture and the number of days its been since the awards ceremony. This allows us to determine both the initial “Oscar Bump” and also get an idea of how long this bump lasts.
 Data
 We decided to use the Oscar ceremonies from 2011-2019 to give us a sufficiently large pool of nominees and winners. This period of time gave us enough data while still staying firmly in the modern Oscar era. We worry that if we included data from from any further back, we would have to worry more about how the Oscars and movie studios attitudes towards the Oscars have changed over time. We retrieved most of our data using the boxoffice package in R. This package allows a user to pull daily box office information from the website The Numbers. This data contains important variables such as percent change in box office revenue from one day to the next and the number of days a movie has been in theaters for every movie in theaters on a given date. Using this package, we were able to pull box office data for 21 days before and after every Oscar Ceremony between the years 2011 and 2019. Our final dataset has 2,313 values, 1,171 before the ceremony and 1,142 after the ceremony. 
+
 ```{r Creating Summary Stats, results = 'asis', echo = F, message=F, warning=F} 
 table <- df %>% 
    select(percent_change, days, Awards) %>% 
@@ -176,6 +132,7 @@ table <- as.data.frame(table)
  
 stargazer(table, title = "Summary Statistics", header = FALSE, type = "latex")
 ```
+
 There were four noticeable outliers in our data set which contained percent changes of box office revenue above 500%. Upon review, three of these points correspond with large increase theatrical re-releases of movies during Oscar season and the 4th point (and the smallest of the four) seems to nothing more than an extra large weekend box office boost. Therefore we have opted to not remove any of these outliers from the data because they contain relevant information which ought to be included in our model.
 Because our data is both time-series within individual movies and cross sectional across years, a traditional Durbin-Watson test across our entire data frame would be ineffective at looking for autocorrelation, as disturbance terms when we switch movies would be incorrectly considered consecutive. To mitigate this problem, we conducted Durbin Watson tests for autocorrelation for individual movies and found that the presence of autocorrelation was minor. 
 Due to the limitations in our toolset, we are unable to correct for both autocorrelation and heteroskedasticity in our model. We used a Breusch-Pagan Test to test for heteroskedasticity and found strong results for its presence. We determined that the severity of autocorrelation in our data was outweighed by the degree of heteroskedasticity, so we used the White correction to update the standard errors of the variables in our data. 
@@ -202,6 +159,7 @@ stargazer(model, title = "Uncorrected Model: Best Picture Oscar Bump", digits = 
 
 stargazer(finalModel, title = "White-Corrected Model: Best Picture Oscar Bump", digits = 5, covariate.labels = c("Days in Theater","Weekend vs Weeknight", "After Ceremony","Oscar Viewership","Total Academy Awards Won", "Best Picture Winner", "Oscar Bump Decay"), dep.var.labels = c("Percent Box Office Change"), header = FALSE, type = "latex")
 ```
+
 Our model finds a statistically significant increase in daily box office revenues for films that win an Oscar for Best Picture, as compared to films that were nominated but did not win. This effect is largest immediately following the awards show and drops daily afterwards. Films that were nominated but did not win saw an absolute decrease in daily box office revenues following the ceremony. This means that even when accounting for heteroskedasticity, we find evidence for the existence of our proposed “Oscar Bump,” significant at the 1% level. Our model predicts that the first day after the awards show, a Best Picture-winning film will receive a 21.95% percent increase in Box Office Revenue (BOR) in comparison to non-winning nominees. The “Oscar Bump” is predicted to decay at a rate of 1.93% per day for Best Picture-winners, so the initial boost in daily BOR lessens as we move farther away from the ceremony. It is important to note, also, that all nominees (including winners) had a predicted drop in box office revenue of 14.89%  after the ceremony, which means that the day-after predicted net percent change in BOR for Best Picture winners is an increase of  7.09%. 
 Of our other control variables, we find that viewership of the Oscars themselves and total number of Academy Awards won by Best Picture nominees have positive but insignificant effects on percent change in BOR. Although insignificant, we argue in our methodology that their impact is theoretically important, and in particular that Oscar viewership is a sufficient proxy for cultural importance of the Oscars, so it would potentially be correlated with our explanatory variables. Therefore, we feel that not including these variables could introduce omitted variable bias into our model. Furthermore, we find that the coefficients for number of days in theaters and day of the week are positive and significant at the 10% and 1% levels, respectively.
 Our “Oscar Bump” is much larger in both magnitude and significance than the positive effect of other Oscars that are not best picture. This supports the hypothesis that the Best Picture Oscar is the most important and has the greatest effect on consumer preferences.

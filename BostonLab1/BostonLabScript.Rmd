@@ -1,0 +1,28 @@
+---
+title: "BostonLab"
+author: "OzzyHouck"
+date: "9/28/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(foreign)
+library(dplyr)
+
+df <- read.dbf("Export_Output.dbf") %>% 
+  mutate(Bnew = (B - .63)^2)
+
+model <- lm(log(MEDV) ~ (RM^2) + AGE + log(DIS) 
+            + log(RAD) + TAX + PTRATIO + Bnew
+            + log(LSTAT) + CRIM + ZN + INDUS
+            + CHAS + NOX, data = df)
+summary(model)
+```
+
+
+
